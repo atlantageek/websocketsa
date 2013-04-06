@@ -1,0 +1,28 @@
+<h1>My socket client</h1>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<div id="piechart">
+Hi all.
+</div>
+
+<canvas id="mycanvas" width="800" height="400" style="border:1px solid #000000">
+</canvas>
+
+<script>
+var socket = io.connect('http://192.168.1.93:8000');
+var canvas = document.getElementById("mycanvas");
+var ctx = canvas.getContext("2d");
+socket.on('message', function(data){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.beginPath();
+  ctx.moveTo(0,0);
+  dist = canvas.width / data.length;
+  hdist = canvas.height / 100;
+  for (var i=0; i<data.length; i++)
+  {
+    ctx.lineTo(i * dist,data[i] * hdist * 10);
+  }
+  ctx.stroke();
+});
+</script>

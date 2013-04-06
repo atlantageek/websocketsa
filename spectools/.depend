@@ -1,0 +1,54 @@
+
+spectool_container.o: spectool_container.c config.h spectool_container.h \
+ wispy_hw_gen1.h wispy_hw_24x.h wispy_hw_dbx.h ubertooth_hw_u1.h
+wispy_hw_gen1.o: wispy_hw_gen1.c config.h spectool_container.h \
+ wispy_hw_gen1.h
+wispy_hw_24x.o: wispy_hw_24x.c config.h spectool_container.h \
+ wispy_hw_24x.h
+wispy_hw_dbx.o: wispy_hw_dbx.c config.h spectool_container.h \
+ wispy_hw_dbx.h
+ubertooth_hw_u1.o: ubertooth_hw_u1.c config.h spectool_container.h \
+ ubertooth_hw_u1.h
+spectool_net_client.o: spectool_net_client.c config.h \
+ spectool_net_client.h spectool_container.h spectool_net.h
+spectool_raw.o: spectool_raw.c config.h spectool_container.h \
+ spectool_net_client.h spectool_net.h
+spectool_container.o: spectool_container.c config.h spectool_container.h \
+ wispy_hw_gen1.h wispy_hw_24x.h wispy_hw_dbx.h ubertooth_hw_u1.h
+wispy_hw_gen1.o: wispy_hw_gen1.c config.h spectool_container.h \
+ wispy_hw_gen1.h
+wispy_hw_24x.o: wispy_hw_24x.c config.h spectool_container.h \
+ wispy_hw_24x.h
+wispy_hw_dbx.o: wispy_hw_dbx.c config.h spectool_container.h \
+ wispy_hw_dbx.h
+ubertooth_hw_u1.o: ubertooth_hw_u1.c config.h spectool_container.h \
+ ubertooth_hw_u1.h
+spectool_net_client.o: spectool_net_client.c config.h \
+ spectool_net_client.h spectool_container.h spectool_net.h
+spectool_gtk_hw_registry.o: spectool_gtk_hw_registry.c config.h \
+ spectool_gtk_hw_registry.h spectool_gtk.h spectool_net.h \
+ spectool_net_client.h spectool_container.h
+spectool_gtk_widget.o: spectool_gtk_widget.c spectool_gtk_widget.h \
+ config.h
+spectool_gtk_channel.o: spectool_gtk_channel.c spectool_gtk_channel.h \
+ config.h
+spectool_gtk_planar.o: spectool_gtk_planar.c spectool_gtk_planar.h \
+ config.h
+spectool_gtk_spectral.o: spectool_gtk_spectral.c spectool_gtk_spectral.h \
+ config.h
+spectool_gtk_topo.o: spectool_gtk_topo.c spectool_gtk_topo.h config.h
+spectool_gtk.o: spectool_gtk.c config.h spectool_gtk.h \
+ spectool_container.h spectool_gtk_planar.h spectool_gtk_spectral.h \
+ spectool_gtk_topo.h spectool_gtk_channel.h
+spectool_container.o: spectool_container.c config.h spectool_container.h \
+ wispy_hw_gen1.h wispy_hw_24x.h wispy_hw_dbx.h ubertooth_hw_u1.h
+wispy_hw_gen1.o: wispy_hw_gen1.c config.h spectool_container.h \
+ wispy_hw_gen1.h
+wispy_hw_24x.o: wispy_hw_24x.c config.h spectool_container.h \
+ wispy_hw_24x.h
+wispy_hw_dbx.o: wispy_hw_dbx.c config.h spectool_container.h \
+ wispy_hw_dbx.h
+ubertooth_hw_u1.o: ubertooth_hw_u1.c config.h spectool_container.h \
+ ubertooth_hw_u1.h
+spectool_net_server.o: spectool_net_server.c config.h \
+ spectool_container.h spectool_net.h
