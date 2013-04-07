@@ -4,7 +4,7 @@ var fs = require('fs');
 var socket_io = require('socket.io');
 var http_routes=require('./http_routes');
 var url = require('url');
-var config={start: null, stop:null};
+var config={start: null, stop: null, amp_count: null};
 var redis = require("redis");
     client = redis.createClient();
     client.on("error", function (err) {
@@ -32,18 +32,30 @@ function start(http_routing) {
   myrand = function(socket) {
     return setInterval(function() {
       var r1, r2;
-      var data = new Array();
-       client.lrange('wispy',0,1, function(err, value)
+      var row;
+       client.lrange('wispy',0,-1, function(err, value)
        {
          var data = new Array();
-         var datastr = value[0].split(',');
-         for( var i=1;i<datastr.length;i++)
+         var image = new Array();
+         for (var k=0;k<100;k++)
          {
-           value=(parseInt(datastr[i]) );
-           data.push(value);
+            image[k] = new Array();
          }
-      
-         send_data(socket,data);
+         for( var j=0; j < value.length;j++)
+         {
+            row = new Array();
+            var datastr = value[j].split(',');
+            for( var i=1;i < datastr.length;i++)
+            {
+              lvl=(parseInt(datastr[i]) );
+              image[lvl+100][i] +=1;
+              row.push(lvl);
+            }
+            data.push(row);
+         }
+         console.log("LENGTH" + data.length);
+         //console.log("First" + image);
+         send_data(socket,data[0]);
        });
     }, 100);
   };
