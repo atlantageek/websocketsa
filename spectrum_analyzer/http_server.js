@@ -48,14 +48,14 @@ function start(http_routing) {
             for( var i=1;i < datastr.length;i++)
             {
               lvl=(parseInt(datastr[i]) );
-              image[lvl+100][i] +=1;
+              image[lvl+100][i] =  (image[lvl + 100][i] || 0 ) + 1000/value.length;
               row.push(lvl);
             }
             data.push(row);
          }
          console.log("LENGTH" + data.length);
-         //console.log("First" + image);
-         send_data(socket,data[0]);
+         console.log("IMAGE " + image);
+         send_data(socket,{ image: image, data: data});
        });
     }, 100);
   };
