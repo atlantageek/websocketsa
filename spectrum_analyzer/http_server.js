@@ -54,8 +54,7 @@ function start(http_routing) {
             data.push(row);
          }
          console.log("LENGTH" + data.length);
-         console.log("IMAGE " + image);
-         send_data(socket,{ image: image, data: data});
+         send_data(socket,{ image: image, trace: data[0]});
        });
     }, 100);
   };
