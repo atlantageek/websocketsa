@@ -5,6 +5,7 @@ var socket_io = require('socket.io');
 var http_routes=require('./http_routes');
 var url = require('url');
 var config={start: null, stop: null, amp_count: null};
+var count = 0;
 var redis = require("redis");
     client = redis.createClient();
     client.on("error", function (err) {
@@ -33,28 +34,43 @@ function start(http_routing) {
     return setInterval(function() {
       var r1, r2;
       var row;
+      count++;
        client.lrange('wispy',0,-1, function(err, value)
        {
          var data = new Array();
          var image = new Array();
-         for (var k=0;k<100;k++)
+         if (( count % 25 ) == 1 )
          {
-            image[k] = new Array();
+           for (var k=0;k<100;k++)
+           {
+              image[k] = new Array();
+           }
+           for( var j=0; j < value.length;j++)
+           {
+              row = new Array();
+              var datastr = value[j].split(',');
+              for( var i=1;i < datastr.length;i++)
+              {
+                lvl=(parseInt(datastr[i]) );
+                image[lvl+100][i] =  (image[lvl + 100][i] || 0 ) + 1000/value.length;
+                row.push(lvl);
+              }
+              data.push(row);
+           }
+           send_data(socket,{ image: image, trace: data[0]}); 
          }
-         for( var j=0; j < value.length;j++)
+         else
          {
-            row = new Array();
-            var datastr = value[j].split(',');
-            for( var i=1;i < datastr.length;i++)
-            {
-              lvl=(parseInt(datastr[i]) );
-              image[lvl+100][i] =  (image[lvl + 100][i] || 0 ) + 1000/value.length;
-              row.push(lvl);
-            }
-            data.push(row);
+           row = new Array();
+           var datastr = value[0].split(',');
+           for( var i=1;i < datastr.length;i++)
+           {
+             lvl=(parseInt(datastr[i]) );
+             row.push(lvl);
+           }
+           send_data(socket,{  trace: row}); 
          }
-         console.log("LENGTH" + data.length);
-         send_data(socket,{ image: image, trace: data[0]});
+         console.log("LENGTH" + data.length + " COUNT" + count);
        });
     }, 100);
   };
