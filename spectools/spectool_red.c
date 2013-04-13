@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <hiredis.h>
+#include <time.h>
 
 #include "config.h"
 
@@ -417,7 +418,7 @@ int main(int argc, char *argv[]) {
                                                 strcat(captured_trace,strnbr);
                                                 
 					}
-					printf("%s\n", captured_trace);
+					printf("%d %s\n",time(NULL), captured_trace);
                                         redisCommand(redis_c, "LPUSH wispy %s",captured_trace);
                                         captured_trace[0] = '\0';
                                         redis_reply = redisCommand(redis_c, "LLEN wispy ");

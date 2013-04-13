@@ -68,19 +68,19 @@ function start(http_routing) {
              lvl=(parseInt(datastr[i]) );
              row.push(lvl);
            }
-           send_data(socket,{  trace: row}); 
+           send_data(socket, {  trace: row}); 
+           console.log("LENGTH" + data.length + " COUNT" + count);
          }
-         console.log("LENGTH" + data.length + " COUNT" + count);
        });
     }, 100);
   };
-  var data = socket_io.listen(app);
   function send_data(socket,data)
   {
       //console.log(JSON.stringify(data));
-      socket.emit('message', JSON.stringify(data));
+      socket.volatile.emit('message', JSON.stringify(data));
   }
-  data.sockets.on('connection', function(socket) {
+  var io = socket_io.listen(app);
+  io.sockets.on('connection', function(socket) {
     console.log("Got a connection.");
     myrand(socket);
   });
