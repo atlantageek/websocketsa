@@ -28,13 +28,15 @@ function start(http_routing) {
       config.stop =parseInt(value);
     }
   );
+  var interval_lookup = {};
 
 
   myrand = function(socket) {
-    return setInterval(function() {
+    interval_id = setInterval(function() {
       var r1, r2;
       var row;
       count++;
+      console.log("HERE" + socket.id);
        client.lrange('wispy',0,-1, function(err, value)
        {
          var data = new Array();
@@ -69,10 +71,10 @@ function start(http_routing) {
              row.push(lvl);
            }
            send_data(socket, {  trace: row}); 
-           console.log("LENGTH" + data.length + " COUNT" + count);
          }
        });
-    }, 100);
+    }, 250);
+    interval_lookup[socket.id] = interval_id;
   };
   function send_data(socket,data)
   {
@@ -83,7 +85,22 @@ function start(http_routing) {
   io.sockets.on('connection', function(socket) {
     console.log("Got a connection.");
     myrand(socket);
+    socket.on('disconnect', function(){
+      console.log("DISCONNECT");
+      disconnect(socket);
+    });
+    socket.on('end', function(){
+      console.log("DISCONNECT2");
+      disconnect(socket);
+    });
+    socket.on('close', function(){
+      console.log("DISCONNECT3");
+      disconnect(socket);
+    });
   });
+  function disconnect(socket){
+  clearInterval(interval_lookup[socket.id]);
+  }
   
 }
 exports.start=start;
