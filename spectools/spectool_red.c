@@ -32,11 +32,14 @@
 #include <errno.h>
 #include <hiredis.h>
 #include <time.h>
+#include <tcbdb.h>
 
 #include "config.h"
 
 #include "spectool_container.h"
 #include "spectool_net_client.h"
+
+#define SNAPSHOT_LEN 60
 
 spectool_phy *devs = NULL;
 int ndev = 0;
@@ -59,6 +62,43 @@ void Usage(void) {
 	return;
 }
 
+typedef struct 
+{
+  int max_trace[1000];
+  int min_trace[1000];
+  int total_trace[1000];
+  int trace_count;
+} DatalogSnapshot;
+
+void store_snapshot(time_t snapshot_start, DatalogSnapshot *snapshot) {
+  TCBDB *tree;
+  int ret;
+  printf("Store Snapshot");
+  tree = tcbdbnew();
+        if (sizeof(time_t) == 4)
+          ret = tcbdbsetcmpfunc(tree, tcbdbcmpint32, NULL);
+        else if (sizeof(time_t) == 8)
+          ret = tcbdbsetcmpfunc(tree, tcbdbcmpint64, NULL);
+        /* open the database */
+        if(!tcbdbopen(tree, "casket.tcb", BDBOWRITER | BDBOCREAT | BDBOTSYNC)){
+          int ecode = tcbdbecode(tree);
+          fprintf(stderr, "open error: %s\n", tcbdberrmsg(ecode));
+        }
+  printf ("Storing @ %d",snapshot_start);
+  tcbdbput(tree,&snapshot_start,sizeof(time_t),snapshot,sizeof(DatalogSnapshot));
+  /* close the database */
+  if(!tcbdbclose(tree)){
+    int ecode = tcbdbecode(tree);
+    fprintf(stderr, "close error: %s\n", tcbdberrmsg(ecode));
+  }
+
+  
+};
+void reset_snapshot(DatalogSnapshot *snapshot) { 
+  printf("Reseting snapshot after %d count\n", snapshot->trace_count);
+  snapshot->trace_count = 0;
+}
+
 int main(int argc, char *argv[]) {
 	spectool_device_list list;
 	int x = 0, r = 0;
@@ -67,7 +107,13 @@ int main(int argc, char *argv[]) {
 	char errstr[SPECTOOL_ERROR_MAX];
 	int ret;
 	spectool_phy *pi;
+        time_t snapshot_start;
+ 
+        /* snapshot */
+        DatalogSnapshot snapshot;
 
+
+        snapshot_start = time(NULL);
 	static struct option long_options[] = {
 		{ "net", required_argument, 0, 'n' },
 		{ "broadcast", no_argument, 0, 'b' },
@@ -90,16 +136,18 @@ int main(int argc, char *argv[]) {
 
 
 	int list_only = 0;
+	int *rangeset = NULL;
 
 	ndev = spectool_device_scan(&list);
         *captured_trace='\0';
         
-	int *rangeset = NULL;
 	if (ndev > 0) {
 		rangeset = (int *) malloc(sizeof(int) * ndev);
 		memset(rangeset, 0, sizeof(int) * ndev);
 	}
 
+
+   reset_snapshot(&snapshot);
 	while (1) {
 		int o = getopt_long(argc, argv, "n:bhr:l",
 							long_options, &option_index);
@@ -244,7 +292,6 @@ int main(int argc, char *argv[]) {
 		fd_set wfds;
 		int maxfd = 0;
 		struct timeval tm;
-                 
 
 		FD_ZERO(&rfds);
 		FD_ZERO(&wfds);
@@ -388,7 +435,7 @@ int main(int argc, char *argv[]) {
 						continue;
 					}
 
-					printf("    %d%s-%d%s @ %0.2f%s, %d samples\n", 
+					/*printf("    %d%s-%d%s @ %0.2f%s, %d samples\n", 
 						   ran->start_khz > 1000 ? 
 						   ran->start_khz / 1000 : ran->start_khz,
 						   ran->start_khz > 1000 ? "MHz" : "KHz",
@@ -397,7 +444,7 @@ int main(int argc, char *argv[]) {
 						   (ran->res_hz / 1000) > 1000 ? 
 						   	((float) ran->res_hz / 1000) / 1000 : ran->res_hz / 1000,
 						   (ran->res_hz / 1000) > 1000 ? "MHz" : "KHz",
-						   ran->num_samples);
+						   ran->num_samples);*/
                                         redisCommand(redis_c, "SET wispy:config:start_freq %d", ran->start_khz);
                                         redisCommand(redis_c, "SET wispy:config:stop_freq %d", ran->end_khz);
 
@@ -411,14 +458,40 @@ int main(int argc, char *argv[]) {
 					sb = spectool_phy_getsweep(di);
 					if (sb == NULL)
 						continue;
-					printf("%s: ", spectool_phy_getname(di));
+					/*printf("%s: ", spectool_phy_getname(di));*/
+
+               if ((time(NULL) - snapshot_start) > SNAPSHOT_LEN)
+               {
+                 store_snapshot(snapshot_start, &snapshot);
+                 reset_snapshot(&snapshot);
+                 snapshot_start = time(NULL);
+                 snapshot.trace_count = 0;
+               }
+
 					for (r = 0; r < sb->num_samples; r++) {
 						sprintf(strnbr, ",%d ", 
-                                                   SPECTOOL_RSSI_CONVERT(sb->amp_offset_mdbm, sb->amp_res_mdbm, sb->sample_data[r]));
-                                                strcat(captured_trace,strnbr);
+							SPECTOOL_RSSI_CONVERT(sb->amp_offset_mdbm, sb->amp_res_mdbm, sb->sample_data[r]));
+						strcat(captured_trace,strnbr);
+
+						if ( snapshot.trace_count == 0 )
+						{
+                  	snapshot.max_trace[r] = sb->sample_data[r];
+                  	snapshot.min_trace[r] = sb->sample_data[r];
+                  	snapshot.total_trace[r] = sb->sample_data[r];
+						}
+						else
+						{
+                  	if ( snapshot.max_trace[r] < sb->sample_data[r] ) 
+								snapshot.max_trace[r] = sb->sample_data[r];
+                  	if ( snapshot.min_trace[r] > sb->sample_data[r] ) 
+								snapshot.min_trace[r] = sb->sample_data[r];
+                  	snapshot.total_trace[r] = snapshot.total_trace[r] + sb->sample_data[r];
+						}
+						snapshot.trace_count = snapshot.trace_count + 1;
                                                 
 					}
-					printf("%d %s\n",time(NULL), captured_trace);
+               
+					/*printf("%d %s\n",time(NULL), captured_trace);*/
                                         redisCommand(redis_c, "LPUSH wispy %s",captured_trace);
                                         captured_trace[0] = '\0';
                                         redis_reply = redisCommand(redis_c, "LLEN wispy ");

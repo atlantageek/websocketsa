@@ -17,13 +17,14 @@ console.log(path);
     {
       if (path == '/')
       {
-        file_name='/dashboard.html';
+        file_name='/index.html';
       }
       else 
       {
         file_name=path
       }
       file_path =__dirname + "/twitter_bootstrap_admin" + file_name;
+      console.log(file_path);
       fs.readFile(file_path,
         function (err, data) {
           if (err) {
