@@ -30,9 +30,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <errno.h>
-#include <hiredis.h>
 #include <time.h>
 #include <tcbdb.h>
+#include <libwebsockets.h>
 
 #include "config.h"
 
@@ -43,6 +43,151 @@
 
 spectool_phy *devs = NULL;
 int ndev = 0;
+
+struct serveable {
+	const char *urlpath;
+	const char *mimetype;
+}; 
+
+static const struct serveable whitelist[] = {
+        { "/favicon.ico", "image/x-icon" },
+        { "/libwebsockets.org-logo.png", "image/png" },
+
+        /* last one is the default served if no match */
+        { "/index.js", "text/html" },
+        { "/index.html", "text/html" },
+};
+struct per_session_data__http {
+	int fd;
+};
+
+
+static int callback_http(struct libwebsocket_context *context,
+		struct libwebsocket *wsi,
+		enum libwebsocket_callback_reasons reason, void *user,
+							   void *in, size_t len)
+{
+	char buf[256];
+	char leaf_path[1024];
+        char resource_path[1024]=".";
+	int n, m;
+	unsigned char *p;
+	static unsigned char buffer[4096];
+	struct stat stat_buf;
+	struct per_session_data__http *pss =
+			(struct per_session_data__http *)user;
+#ifdef EXTERNAL_POLL
+	int fd = (int)(long)in;
+#endif
+
+	switch (reason) {
+	case LWS_CALLBACK_HTTP:
+
+
+		for (n = 0; n < (sizeof(whitelist) / sizeof(whitelist[0]) - 1); n++)
+			if (in && strcmp((const char *)in, whitelist[n].urlpath) == 0)
+				break;
+
+		sprintf(buf, "%s%s", resource_path, whitelist[n].urlpath);
+
+		if (libwebsockets_serve_http_file(context, wsi, buf, whitelist[n].mimetype))
+			return -1; /* through completion or error, close the socket */
+
+		/*
+		 * notice that the sending of the file completes asynchronously,
+		 * we'll get a LWS_CALLBACK_HTTP_FILE_COMPLETION callback when
+		 * it's done
+		 */
+
+		break;
+
+	case LWS_CALLBACK_HTTP_FILE_COMPLETION:
+//		lwsl_info("LWS_CALLBACK_HTTP_FILE_COMPLETION seen\n");
+		/* kill the connection after we sent one file */
+		return -1;
+
+
+bail:
+		close(pss->fd);
+		return -1;
+
+	/*
+	 * callback for confirming to continue with client IP appear in
+	 * protocol 0 callback since no websocket protocol has been agreed
+	 * yet.  You can just ignore this if you won't filter on client IP
+	 * since the default uhandled callback return is 0 meaning let the
+	 * connection continue.
+	 */
+
+	case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
+#if 0
+		libwebsockets_get_peer_addresses(context, wsi, (int)(long)in, client_name,
+			     sizeof(client_name), client_ip, sizeof(client_ip));
+
+		fprintf(stderr, "Received network connect from %s (%s)\n",
+							client_name, client_ip);
+#endif
+		/* if we returned non-zero from here, we kill the connection */
+		break;
+
+#ifdef EXTERNAL_POLL
+	/*
+	 * callbacks for managing the external poll() array appear in
+	 * protocol 0 callback
+	 */
+
+	case LWS_CALLBACK_ADD_POLL_FD:
+
+		if (count_pollfds >= max_poll_elements) {
+			lwsl_err("LWS_CALLBACK_ADD_POLL_FD: too many sockets to track\n");
+			return 1;
+		}
+
+		fd_lookup[fd] = count_pollfds;
+		pollfds[count_pollfds].fd = fd;
+		pollfds[count_pollfds].events = (int)(long)len;
+		pollfds[count_pollfds++].revents = 0;
+		break;
+
+	case LWS_CALLBACK_DEL_POLL_FD:
+		if (!--count_pollfds)
+			break;
+		m = fd_lookup[fd];
+		/* have the last guy take up the vacant slot */
+		pollfds[m] = pollfds[count_pollfds];
+		fd_lookup[pollfds[count_pollfds].fd] = m;
+		break;
+
+	case LWS_CALLBACK_SET_MODE_POLL_FD:
+		pollfds[fd_lookup[fd]].events |= (int)(long)len;
+		break;
+
+	case LWS_CALLBACK_CLEAR_MODE_POLL_FD:
+		pollfds[fd_lookup[fd]].events &= ~(int)(long)len;
+		break;
+#endif
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+/* list of supported protocols and callbacks */
+
+static struct libwebsocket_protocols protocols[] = {
+        /* first protocol must always be HTTP handler */
+
+        {
+                "http-only",            /* name */
+                callback_http,          /* callback */
+                sizeof (struct per_session_data__http), /* per_session_data_size */
+                0,                      /* max frame size / rx buffer */
+        },
+        { NULL, NULL, 0, 0 } /* terminator */
+};
+
+
 
 void sighandle(int sig) {
 	int x;
@@ -99,7 +244,24 @@ void reset_snapshot(DatalogSnapshot *snapshot) {
   snapshot->trace_count = 0;
 }
 
+void poll_webserver() {
+}
+
 int main(int argc, char *argv[]) {
+   /*Configure web interface */
+	struct libwebsocket_context *lws_context;
+	int opts;
+        int service_count;
+	char interface_name[128] = "";
+	const char *iface = NULL;
+
+	struct lws_context_creation_info lws_info;
+
+
+
+
+   /* Spectools */
+
 	spectool_device_list list;
 	int x = 0, r = 0;
 	spectool_sample_sweep *sb;
@@ -107,13 +269,37 @@ int main(int argc, char *argv[]) {
 	char errstr[SPECTOOL_ERROR_MAX];
 	int ret;
 	spectool_phy *pi;
-        time_t snapshot_start;
+	time_t snapshot_start;
  
-        /* snapshot */
-        DatalogSnapshot snapshot;
+	/* snapshot */
+	DatalogSnapshot snapshot;
+
+   /* Init webserver data */
+	memset(&lws_info, 0, sizeof lws_info);
+	lws_info.port = 7681;
+	lws_info.iface = "";
+	lws_info.protocols = protocols;
+   lws_info.ssl_cert_filepath = NULL;
+   lws_info.ssl_private_key_filepath = NULL;
+   lws_info.gid = -1;
+   lws_info.uid = -1;
+
+   lws_context = libwebsocket_create_context(&lws_info);
+   if (lws_context == NULL) {
+           lwsl_err("libwebsocket init failed\n");
+           return -1;
+   }
 
 
-        snapshot_start = time(NULL);
+   lws_set_log_level(7, lwsl_emit_syslog);
+	lwsl_notice("libwebsockets test server - "
+	  "(C) Copyright 2010-2013 Andy Green <andy@warmcat.com> - "
+	  "licensed under LGPL2.1\n");
+
+
+
+
+	snapshot_start = time(NULL);
 	static struct option long_options[] = {
 		{ "net", required_argument, 0, 'n' },
 		{ "broadcast", no_argument, 0, 'b' },
@@ -123,7 +309,6 @@ int main(int argc, char *argv[]) {
 		{ 0, 0, 0, 0 }
 	};
 	int option_index;
-        redisContext *redis_c;
 
 	char *neturl = NULL;
 
@@ -132,7 +317,6 @@ int main(int argc, char *argv[]) {
 	int bcastsock;
         char *captured_trace = (char *) malloc(sizeof(char) * 512);
         char *strnbr=malloc(6);
-        redisReply *redis_reply;
 
 
 	int list_only = 0;
@@ -285,7 +469,7 @@ int main(int argc, char *argv[]) {
 		spectool_device_scan_free(&list); 
 	}
 
-        redis_c = redisConnect("127.0.0.1", 6379);
+        //redis_c = redisConnect("127.0.0.1", 6379);
 	/* Naive poll that doesn't use select() to find pending data */
 	while (1) {
 		fd_set rfds;
@@ -296,10 +480,6 @@ int main(int argc, char *argv[]) {
 		FD_ZERO(&rfds);
 		FD_ZERO(&wfds);
 
-                if (redis_c != NULL && redis_c->err) {
-                   printf("Error: %s\n", redis_c->errstr);
-                   exit(1);
-                }
 
 		pi = devs;
 		while (pi != NULL) {
@@ -445,8 +625,8 @@ int main(int argc, char *argv[]) {
 						   	((float) ran->res_hz / 1000) / 1000 : ran->res_hz / 1000,
 						   (ran->res_hz / 1000) > 1000 ? "MHz" : "KHz",
 						   ran->num_samples);*/
-                                        redisCommand(redis_c, "SET wispy:config:start_freq %d", ran->start_khz);
-                                        redisCommand(redis_c, "SET wispy:config:stop_freq %d", ran->end_khz);
+                                        //redisCommand(redis_c, "SET wispy:config:start_freq %d", ran->start_khz);
+                                        //redisCommand(redis_c, "SET wispy:config:stop_freq %d", ran->end_khz);
 
 					continue;
 				} else if ((r & SPECTOOL_POLL_ERROR)) {
@@ -492,18 +672,21 @@ int main(int argc, char *argv[]) {
 					}
                
 					/*printf("%d %s\n",time(NULL), captured_trace);*/
-                                        redisCommand(redis_c, "LPUSH wispy %s",captured_trace);
+                                        //redisCommand(redis_c, "LPUSH wispy %s",captured_trace);
                                         captured_trace[0] = '\0';
-                                        redis_reply = redisCommand(redis_c, "LLEN wispy ");
-                                        if (redis_reply->integer > 501)
-                                        {
-                                          redisCommand(redis_c, "RPOP wispy");
-                                          redisCommand(redis_c, "RPOP wispy");
-                                        }
+                                        //redis_reply = redisCommand(redis_c, "LLEN wispy ");
+                                        //if (redis_reply->integer > 501)
+                                        //{
+                                        //  redisCommand(redis_c, "RPOP wispy");
+                                        //  redisCommand(redis_c, "RPOP wispy");
+                                        //}
+
+					poll_webserver();
 				}
 			} while ((r & SPECTOOL_POLL_ADDITIONAL));
 
 		}
+                service_count = libwebsocket_service(lws_context, 50);
 	}
 
 	return 0;
