@@ -56,6 +56,7 @@ static const struct serveable whitelist[] = {
         /* last one is the default served if no match */
         { "/index.js", "text/html" },
         { "/index.html", "text/html" },
+        { "/index.html", "text/html" },
 };
 struct per_session_data__http {
 	int fd;
@@ -69,7 +70,7 @@ static int callback_http(struct libwebsocket_context *context,
 {
 	char buf[256];
 	char leaf_path[1024];
-        char resource_path[1024]=".";
+        char resource_path[1024]="./webui";
 	int n, m;
 	unsigned char *p;
 	static unsigned char buffer[4096];
