@@ -3,8 +3,9 @@ var sa_config={};
 var markers = [null,null];
 var trace_data = new Array();
 var min_data = new Array();
+var sa_width = 800;
 var max_data = new Array();
-          var socket = io.connect('http://192.168.100.110:8000');
+          var socket; // = io.connect('http://192.168.100.110:8000');
           var canvas ;
           var canvas2 ;
           var canvas3 ;
@@ -16,8 +17,171 @@ var max_data = new Array();
           var upper_bound = -40;
           var lower_bound = -100;
           var range = upper_bound - lower_bound;
-          var playing = true;
+          var playing = false;
           color_table = ["rgba(255,255,255,0.9)","rgba(255,128,0,0.9)","rgba(255,255,0,0.9)","rgba(0,255,0,0.9)","rgba(0,255,255,0.9)","rgba(0.928,255,0.9)","rgba(0,0,255,0.9)","rgba(128,0,255,0.9)","rgba(255,0,255,0.9)","rgba(255,0.928,0.9)","rgba(255,0,0,0.9)"];
+
+if (typeof MozWebSocket != "undefined") {
+        socket = new MozWebSocket(get_appropriate_ws_url(), "trace-protocol");
+} else {
+        socket = new WebSocket(get_appropriate_ws_url(), "trace-protocol");
+}
+        try {
+                socket.onopen = function() {
+			pause_play();
+                }
+
+                socket.onclose = function(){
+                }
+        } catch(exception) {
+                alert('<p>Error' + exception);
+        }
+
+
+
+var BrowserDetect = {
+        init: function () {
+                this.browser = this.searchString(this.dataBrowser) || "An unknown browser";
+                this.version = this.searchVersion(navigator.userAgent)
+                        || this.searchVersion(navigator.appVersion)
+                        || "an unknown version";
+                this.OS = this.searchString(this.dataOS) || "an unknown OS";
+        },
+        searchString: function (data) {
+                for (var i=0;i<data.length;i++) {
+                        var dataString = data[i].string;
+                        var dataProp = data[i].prop;
+                        this.versionSearchString = data[i].versionSearch || data[i].identity;
+                        if (dataString) {
+                                if (dataString.indexOf(data[i].subString) != -1)
+                                        return data[i].identity;
+                        }
+                        else if (dataProp)
+                                return data[i].identity;
+                }
+        },
+        searchVersion: function (dataString) {
+                var index = dataString.indexOf(this.versionSearchString);
+                if (index == -1) return;
+                return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+        },
+        dataBrowser: [
+                {
+                        string: navigator.userAgent,
+                        subString: "Chrome",
+                        identity: "Chrome"
+                },
+                {       string: navigator.userAgent,
+                        subString: "OmniWeb",
+                        versionSearch: "OmniWeb/",
+                        identity: "OmniWeb"
+                },
+                {
+                        string: navigator.vendor,
+                        subString: "Apple",
+                        identity: "Safari",
+                        versionSearch: "Version"
+                },
+                {
+                        prop: window.opera,
+                        identity: "Opera",
+                        versionSearch: "Version"
+                },
+                {
+                        string: navigator.vendor,
+                        subString: "iCab",
+                        identity: "iCab"
+                },
+                {
+                        string: navigator.vendor,
+                        subString: "KDE",
+                        identity: "Konqueror"
+                },
+                {
+                        string: navigator.userAgent,
+                        subString: "Firefox",
+                        identity: "Firefox"
+                },
+                {
+                        string: navigator.vendor,
+                        subString: "Camino",
+                        identity: "Camino"
+                },
+                {               // for newer Netscapes (6+)
+                        string: navigator.userAgent,
+                        subString: "Netscape",
+                        identity: "Netscape"
+                },
+                {
+                        string: navigator.userAgent,
+                        subString: "MSIE",
+                        identity: "Explorer",
+                        versionSearch: "MSIE"
+                },
+                {
+                        string: navigator.userAgent,
+                        subString: "Gecko",
+                        identity: "Mozilla",
+                        versionSearch: "rv"
+                },
+                {               // for older Netscapes (4-)
+                        string: navigator.userAgent,
+                        subString: "Mozilla",
+                        identity: "Netscape",
+                        versionSearch: "Mozilla"
+                }
+        ],
+        dataOS : [
+                {
+                        string: navigator.platform,
+                        subString: "Win",
+                        identity: "Windows"
+                },
+                {
+                        string: navigator.platform,
+                        subString: "Mac",
+                        identity: "Mac"
+                },
+                {
+                           string: navigator.userAgent,
+                           subString: "iPhone",
+                           identity: "iPhone/iPod"
+            },
+                {
+                        string: navigator.platform,
+                        subString: "Linux",
+                        identity: "Linux"
+                }
+        ]
+
+};
+BrowserDetect.init();
+//document.getElementById("brow").textContent = " " + BrowserDetect.browser + " "
+//        + BrowserDetect.version +" " + BrowserDetect.OS +" ";
+
+function get_appropriate_ws_url()
+{
+        var pcol;
+        var u = document.URL;
+
+        /*
+         * We open the websocket encrypted if this page came on an
+         * https:// url itself, otherwise unencrypted
+         */
+
+        if (u.substring(0, 5) == "https") {
+                pcol = "wss://";
+                u = u.substr(8);
+        } else {
+                pcol = "ws://";
+                if (u.substring(0, 4) == "http")
+                        u = u.substr(7);
+        }
+
+        u = u.split('/');
+
+        return pcol + u[0];
+}
+
 
 function pos_to_idx(pos)
 {
@@ -36,8 +200,34 @@ function pos_to_freq(pos)
   multiplier = freq_range / width;
   return multiplier * pos + sa_config.start;
 }
+divH = divW = 0;
+
+function checkResize(){
+    var w = $("#canvasesdiv").width();
+    var h = $("#canvasesdiv").height();
+
+    if (w != divW || h != divH) {
+	$("#mycanvas").width(w);
+	$("#mycanvas2").width(w);
+	$("#mycanvas3").width(w);
+	$("#mycanvas4").width(w);
+	$("#mycanvas").height(h);
+	$("#mycanvas2").height(h);
+	$("#mycanvas3").height(h);
+	$("#mycanvas4").height(h);
+	console.log($("#mycanvas").scalewidth);
+        /*what ever*/
+        divH = h;
+        divW = w;
+    }
+}
 
 $(function() {
+
+divW = jQuery("canvasdiv").width;
+divH = jQuery("canvasdiv").height;
+jQuery(window).resize(checkResize);
+var timer = setInterval(checkResize, 1000);
 canvas = document.getElementById("mycanvas");
 canvas2 = document.getElementById("mycanvas2");
 canvas3 = document.getElementById("mycanvas3");
@@ -67,6 +257,7 @@ $('div.btn-group[data-toggle-name]').each(function () {
 
  $("#mycanvas3").on('click', function (e) {
     var x=(e.pageX-$("#mycanvas3").offset().left);
+    x=x *  sa_width / $("#mycanvas3").width();
     var marker = $("input[name=testOption]");
     if (marker.val() == 'marker1')
     {
@@ -89,11 +280,13 @@ $('div.btn-group[data-toggle-name]').each(function () {
   {
             ctx3.lineWidth=1;
             ctx3.strokeStyle = "rgba(99,0,0,0.2)";
-            ctx3.font="20px Arial";
+            ctx3.fillStyle = "rgba(0,0,0,0.5)";
+            ctx3.font="32px Arial";
             var diff = canvas.height / range;
             for (bar = lower_bound; bar < upper_bound; bar += 5)
             {
               ctx3.beginPath();
+              ctx3.font="10px Georgia";
               ctx3.moveTo(0,(bar - lower_bound) * diff);
               ctx3.lineTo(canvas.width,(bar - lower_bound) * diff);
               ctx3.stroke();
@@ -144,15 +337,20 @@ $('div.btn-group[data-toggle-name]').each(function () {
             }
            
           }
-          socket.on('message', function(data_json){
+          socket.onmessage = function(data_json){
             if (!playing)
             {
               return;
             }
             ctx.clearRect(0,0,canvas.width,canvas.height);
             ctx2.clearRect(0,0,canvas.width,canvas.height);
-            
-            data_obj = JSON.parse(data_json);
+            try {
+              data_obj = JSON.parse(data_json.data);
+            } catch(e) {
+		console.log(data_json.data);
+		alert(e);
+		
+	    }
             trace_data = data_obj.trace;
             dist = canvas.width / (trace_data.length - 1);
             hdist = canvas.height / range;
@@ -223,4 +421,4 @@ $('div.btn-group[data-toggle-name]').each(function () {
                $('#marker' + (marker_index + 1) + '_min').html(min_data[idx] + " dB");
              }
            }
-          });
+          }

@@ -7,10 +7,10 @@
   <script src="assets/js/jquery-1.7.1.min.js"></script>
   <script src="assets/js/bootstrap.min.js"></script>
   <script src="assets/js/admin.min.js"></script>
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="dashboard.js"></script>
 </head>
-<body>
-<div class="navbar navbar-fixed-top">
+<body style="padding-top: 60px;">
+<div class="navbar navbar-inverse navbar-fixed-top">
   <div class="navbar-inner">
     <div class="container-fluid">
       <a href="dashboard.html" class="brand">Spectrum Analyzer</a>
@@ -39,10 +39,10 @@
     </div>
   </div>
 </div>
-<div class="container top">
+<div class="container-fluid">
 
 
-  <script src="/dashboard.js"></script>
+  <!--<script src="/dashboard.js"></script>-->
 
   <div class="row-fluid">
     <div class="span7">
@@ -64,12 +64,12 @@
 
     <div class="btn-group ">
     </div>
-          <div id="canvasesdiv" class="span9" >
-          <div  style="position:relative;width:800px;height:400px;margin-left:auto;margin-right:auto;">
-          <canvas id="mycanvas" width="600" height="400" style="z-index:1;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
-          <canvas id="mycanvas2" width="600" height="400" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
-          <canvas id="mycanvas4" width="600" height="400" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
-          <canvas id="mycanvas3" width="600" height="400" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <div id="canvasesdiv" class="span12" >
+          <div  style="position:relative;width:100%;height:400px;margin-left:auto;margin-right:auto;">
+          <canvas id="mycanvas"  height="400" width="800" style="z-index:1;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas2" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas4" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas3" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
           </div>
           </div>
 
@@ -86,6 +86,7 @@
       Level: <b id="marker1_level"></b><p>
       Peak: <b id="marker1_max"></b><p>
       Valley: <b id="marker1_min"></b><p>
+      <canvas id="marker1" height="50" style="z-index:0;position:relative;left:0px;bottom:0px;width:90%;heigth:60;border:1px solid #000000"></canvas><p>
       </div>
       <div class="well">
       <h3>Marker 2</h3>
