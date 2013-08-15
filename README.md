@@ -9,3 +9,5 @@ It requires tokyo cabinet library because we are including some datalogging as w
 the web interface for this is not complete yet.
 
 Contact me at atlantageek@gmail.com if you use this.
+
+Video at http://www.youtube.com/watch?v=BzgFxtnZhSo&feature=youtu.be
