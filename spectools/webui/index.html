@@ -1,0 +1,115 @@
+ <!DOCTYPE html> 
+<html lang="en-US">
+<head>
+    <title>Wi-Spy Spectrum Analyzer</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="assets/css/global.css" type="text/css">
+  <script src="assets/js/jquery-1.7.1.min.js"></script>
+  <script src="assets/js/bootstrap.min.js"></script>
+  <script src="assets/js/admin.min.js"></script>
+  <script src="dashboard.js"></script>
+</head>
+<body style="padding-top: 60px;">
+<div class="navbar navbar-inverse navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <a href="dashboard.html" class="brand">Spectrum Analyzer</a>
+      <ul class="nav">
+        <li class="active">
+          <a href="dashboard.html">Dashboard</a>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Settings <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            <li>
+              <a href="#">Secondary link</a>
+            </li>
+            <li>
+              <a href="#">Something else here</a>
+            </li>
+            <li>
+              <a href="#">Another link</a>
+            </li>
+          </ul>
+        </li>
+      </ul>
+      <form action="" class="navbar-search pull-left">
+        <input type="text" placeholder="Search" class="search-query span2">
+      </form>
+    </div>
+  </div>
+</div>
+<div class="container-fluid">
+
+
+  <!--<script src="/dashboard.js"></script>-->
+
+  <div class="row-fluid">
+    <div class="span7">
+        <button class="btn" onclick="reset_extremes()">Reset</button>
+        <button id="pauseplay" class="btn" onclick="pause_play()">Pause</button>
+    </div>
+    <div class="span5">
+  <form>
+      <div id="test-group" class="btn-group" data-toggle="buttons-radio" data-toggle-name="testOption">
+        <input type="hidden" name="testOption"/>
+        <button type="button" class="btn" data-toggle-value="marker1">Marker1</button>
+        <button type="button" class="btn" data-toggle-value="marker2">Marker2</button>
+      </div>
+</form>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span9 columns">
+
+    <div class="btn-group ">
+    </div>
+          <div id="canvasesdiv" class="span12" >
+          <div  style="position:relative;width:100%;height:400px;margin-left:auto;margin-right:auto;">
+          <canvas id="mycanvas"  height="400" width="800" style="z-index:1;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas2" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas4" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          <canvas id="mycanvas3" height="400" width="800" style="z-index:2;position:absolute;left:0px;top:0px;border:1px solid #000000"> </canvas>
+          </div>
+          </div>
+
+        <br><p>
+    </div>
+    <div class="span3 columns">
+      <div class="well">
+      Start Freq: <b id="start_freq"></b><p>
+      Stop  Freq: <b id="stop_freq"></b><p>
+      </div>
+      <div class="well">
+      <h3>Marker 1</h3>
+      Freq: <b id="marker1_freq"></b><p>
+      Level: <b id="marker1_level"></b><p>
+      Peak: <b id="marker1_max"></b><p>
+      Valley: <b id="marker1_min"></b><p>
+      <canvas id="marker1" height="50" style="z-index:0;position:relative;left:0px;bottom:0px;width:90%;heigth:60;border:1px solid #000000"></canvas><p>
+      </div>
+      <div class="well">
+      <h3>Marker 2</h3>
+      Freq: <b id="marker2_freq"></b><p>
+      Level: <b id="marker2_level"></b><p>
+      Peak: <b id="marker2_max"></b><p>
+      Valley: <b id="marker2_min"></b><p>
+      </div>
+    </div>
+  </div>
+</div>
+  <div id="footer">
+    <hr>
+    <div class="inner">
+      <div class="container">
+        <p class="right">
+          <a href="#">Back to top</a>
+        </p>
+        <p>
+            <h3>http://www.atlantageek.com</h3>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
