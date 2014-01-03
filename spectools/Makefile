@@ -10,13 +10,13 @@ LIB = ${DESTDIR}${exec_prefix}/lib
 INCLUDE = ${DESTDIR}${prefix}/include
 
 CC = gcc
-REDLDFLAGS = -lhiredis 
+REDLDFLAGS = #-lhiredis 
 LDFLAGS = 
-LIBS =  -lpthread -lm -lusb  -ltokyocabinet -lwebsockets
+LIBS =  -lpthread -lm -lusb  -lwebsockets
 CURSLIBS = 
 GTKLIBS = 
 HILDLIBS = 
-CFLAGS = -I./ -g -O2 -I/usr/local/include/hiredis  
+CFLAGS = -I./ -g -O2 #-I/usr/local/include/hiredis  
 CPPFLAGS = 
 
 GTK_CONFIG=@GTK_CONFIG@

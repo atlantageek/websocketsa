@@ -31,7 +31,6 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-#include <tcbdb.h>
 #include <libwebsockets.h>
 
 #include "config.h"
@@ -127,7 +126,7 @@ static int callback_http(struct libwebsocket_context *context,
 			printf("%s %s %s\n", buf, ext, mimetype);
 
 			sprintf(buf, "%s%s", resource_path, (char *)in);
-			if (libwebsockets_serve_http_file(context, wsi, buf, mimetype))
+			if (libwebsockets_serve_http_file(context, wsi, buf, mimetype,NULL))
 				return -1; /* through completion or error, close the socket */
 		}
 
@@ -301,26 +300,6 @@ typedef struct
 
 
 void store_snapshot(time_t snapshot_start, DatalogSnapshot *snapshot) {
-	TCBDB *tree;
-	int ret;
-	printf("Store Snapshot");
-	tree = tcbdbnew();
-	if (sizeof(time_t) == 4)
-		ret = tcbdbsetcmpfunc(tree, tcbdbcmpint32, NULL);
-	else if (sizeof(time_t) == 8)
-		ret = tcbdbsetcmpfunc(tree, tcbdbcmpint64, NULL);
-	/* open the database */
-	if(!tcbdbopen(tree, "casket.tcb", BDBOWRITER | BDBOCREAT | BDBOTSYNC)) {
-		int ecode = tcbdbecode(tree);
-		fprintf(stderr, "open error: %s\n", tcbdberrmsg(ecode));
-	}
-	printf ("Storing @ %d",snapshot_start);
-	tcbdbput(tree,&snapshot_start,sizeof(time_t),snapshot,sizeof(DatalogSnapshot));
-	/* close the database */
-	if(!tcbdbclose(tree)) {
-		int ecode = tcbdbecode(tree);
-		fprintf(stderr, "close error: %s\n", tcbdberrmsg(ecode));
-	}
 
 
 };
@@ -393,7 +372,7 @@ int main(int argc, char *argv[]) {
 	/* Init webserver data */
 	memset(&lws_info, 0, sizeof lws_info);
 	lws_info.port = 7681;
-	lws_info.iface = "";
+	lws_info.iface = iface;
 	lws_info.protocols = protocols;
 	lws_info.ssl_cert_filepath = NULL;
 	lws_info.ssl_private_key_filepath = NULL;
