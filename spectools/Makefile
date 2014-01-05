@@ -10,41 +10,22 @@ LIB = ${DESTDIR}${exec_prefix}/lib
 INCLUDE = ${DESTDIR}${prefix}/include
 
 CC = gcc
-REDLDFLAGS = #-lhiredis 
 LDFLAGS = 
-LIBS =  -lpthread -lm -lusb  -lwebsockets
+LIBS = -lwebsockets  -lpthread -lm -lusb 
 CURSLIBS = 
 GTKLIBS = 
 HILDLIBS = 
-CFLAGS = -I./ -g -O2 #-I/usr/local/include/hiredis  
+CFLAGS = -I./ -g -O2
 CPPFLAGS = 
 
 GTK_CONFIG=@GTK_CONFIG@
 
 DRIVERS = wispy_hw_gen1.o wispy_hw_24x.o wispy_hw_dbx.o ubertooth_hw_u1.o
 
-RAWOBJS = spectool_container.o ${DRIVERS} \
-	spectool_net_client.o spectool_raw.o
-RAWBIN = spectool_raw
+WEBOBJS = spectool_container.o ${DRIVERS} \
+	spectool_net_client.o spectool_web.o
 
-REDOBJS = spectool_container.o ${DRIVERS} \
-	spectool_net_client.o spectool_red.o
-REDBIN = spectool_red
-
-CURSOBJS = spectool_container.o ${DRIVERS} \
-	spectool_net_client.o spectool_curses.o
-CURSBIN = spectool_curses
-
-NETOBJS = spectool_container.o ${DRIVERS} \
-	spectool_net_server.o
-NETBIN = spectool_net
-
-GTKOBJS = spectool_container.o ${DRIVERS} \
-	spectool_net_client.o \
-	spectool_gtk_hw_registry.o spectool_gtk_widget.o spectool_gtk_channel.o \
-	spectool_gtk_planar.o spectool_gtk_spectral.o spectool_gtk_topo.o \
-	spectool_gtk.o
-GTKBIN = spectool_gtk
+WEBBIN = spectool_web
 
 HILDOBJS = spectool_container.o wispy_hw_gen1.o wispy_hw_24x.o wispy_hw_dbx.o \
 	spectool_net_client.o \
@@ -58,22 +39,10 @@ HILDUSBBIN = usbcontrol
 
 DEPEND	= .depend
 
-all:	$(DEPEND) spectool_raw spectool_net
+all:	$(DEPEND) spectool_web
 
-$(RAWBIN):	$(RAWOBJS)
-	$(CC) $^ -o $(RAWBIN) $(LDFLAGS) $(LIBS)
-
-$(REDBIN):	$(REDOBJS)
-	$(CC) $^ -o $(REDBIN) $(REDLDFLAGS) $(LDFLAGS) $(LIBS)
-
-$(CURSBIN):	$(CURSOBJS)
-	$(CC) $^ -o $(CURSBIN) $(LDFLAGS) $(LIBS) $(CURSLIBS)
-
-$(NETBIN):	$(NETOBJS)
-	$(CC) $^ -o $(NETBIN) $(LDFLAGS) $(LIBS)
-
-$(GTKBIN):	$(GTKOBJS)
-	$(CC) $^ -o $(GTKBIN) $(LDFLAGS) $(GTKLIBS)
+$(WEBBIN):	$(WEBOBJS)
+	$(CC) $^ -o $(WEBBIN) $(LDFLAGS) $(LIBS)
 
 $(HILDUSBBIN):	$(HILDUSBOBJS)
 	$(CC) $^ -o $(HILDUSBBIN) $(LDFLAGS)
@@ -81,17 +50,14 @@ $(HILDUSBBIN):	$(HILDUSBOBJS)
 $(HILDBIN):	$(HILDOBJS) $(HILDUSBBIN)
 	$(CC) $(HILDOBJS) -o $(HILDBIN) $(LDFLAGS) $(GTKLIBS) $(HILDLIBS)
 
-install:	spectool_raw spectool_net
+install:	spectool_web
 	install -d -m 755 $(BIN)
-	if [ -e $(RAWBIN) ]; then install -m 755 $(RAWBIN) $(BIN)/$(RAWBIN); fi
-	if [ -e $(NETBIN) ]; then install -m 755 $(NETBIN) $(BIN)/$(NETBIN); fi
-	if [ -e $(GTKBIN) ]; then install -m 755 $(GTKBIN) $(BIN)/$(GTKBIN); fi
-	if [ -e $(CURSBIN) ]; then install -m 755 $(CURSBIN) $(BIN)/$(CURSBIN); fi
+	if [ -e $(WEBBIN) ]; then install -m 755 $(WEBBIN) $(BIN)/$(WEBBIN); fi
 	# No make install for hildon binaries, they should be packaged
 
 clean:
 	@-rm *.o
-	@-rm $(RAWBIN) $(GTKBIN) $(NETBIN) $(CURSBIN) $(HILDBIN) $(HILDUSBBIN)
+	@-rm $(WEBBIN) $(HILDBIN) $(HILDUSBBIN)
 
 distclean:
 	@-make clean
@@ -112,7 +78,7 @@ $(DEPEND):
 	@echo "Generating dependencies... "
 	@echo > $(DEPEND)
 	@$(CXX) $(CFLAGS) -MM \
-		`echo $(RAWOBJS) $(GTKOBJS) $(CUROBJS) $(NETOBJS) \
+		`echo $(WEBOBJS) \
 		| sed -e "s/\.o/\.c/g"` >> $(DEPEND)
 
 include $(DEPEND)

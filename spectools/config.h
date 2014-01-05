@@ -28,6 +28,9 @@
 /* LibUSB */
 #define HAVE_LIBUSB 1
 
+/* Define to 1 if you have the `websockets' library (-lwebsockets). */
+#define HAVE_LIBWEBSOCKETS 1
+
 /* we have libgtk2.x */
 /* #undef HAVE_LIB_GTK2 */
 
@@ -84,6 +87,9 @@
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME ""
+
+/* Define to the home page for this package. */
+#define PACKAGE_URL ""
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION ""
