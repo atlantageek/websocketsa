@@ -14,5 +14,4 @@ make install
 
 
 Contact me at atlantageek@gmail.com if you use this.
-
-Video at http://www.youtube.com/watch?v=BzgFxtnZhSo&feature=youtu.be
+(https://github.com/atlantageek/websocketsa/blob/master/websocket.png?raw=true)
