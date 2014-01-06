@@ -8,8 +8,11 @@ spectool_raw that is compatible google chrome and IE
 It requires libwebsockets: http://libwebsockets.org/trac/libwebsockets
 
 To build do the 
+
 ./configure
+
 make
+
 make install
 
 
