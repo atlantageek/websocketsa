@@ -14,4 +14,4 @@ make install
 
 
 Contact me at atlantageek@gmail.com if you use this.
-(https://github.com/atlantageek/websocketsa/blob/master/websocket.png?raw=true)
+![Screenshot of image](https://github.com/atlantageek/websocketsa/blob/master/websocket.png?raw=true "Screenshot")
