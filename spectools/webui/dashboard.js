@@ -9,6 +9,7 @@ var canvas;
 var canvas2;
 var canvas3;
 var canvas4;
+var waterfall_ctx;
 var ctx;
 var ctx2;
 var ctx3;
@@ -16,7 +17,12 @@ var upper_bound = -40;
 var lower_bound = -100;
 var range = upper_bound - lower_bound;
 var playing = false;
+var traces=[];
 color_table = ["rgba(255,255,255,0.9)", "rgba(255,128,0,0.9)", "rgba(255,255,0,0.9)", "rgba(0,255,0,0.9)", "rgba(0,255,255,0.9)", "rgba(0.928,255,0.9)", "rgba(0,0,255,0.9)", "rgba(128,0,255,0.9)", "rgba(255,0,255,0.9)", "rgba(255,0.928,0.9)", "rgba(255,0,0,0.9)"];
+cold_hot_table = [ "rgba(255,0,0)", "rgba(255,16,0)", "rgba(255,32,0)", "rgba(255,48,0)", "rgba(255,64,0)", "rgba(255,80,0)", "rgba(255,96,0)", "rgba(255,112,0)",
+"rgba(255,128,0)", "rgba(255,144,0)", "rgba(255,160,0)", "rgba(255,176,0)", "rgba(255,192,0)", "rgba(255,208,0)", "rgba(255,224,0)", "rgba(255,240,0)", "rgba(255,255,0)",
+"rgba(240,255,0)", "rgba(224,255,0)", "rgba(208,255,0)", "rgba(192,255,0)", "rgba(176,255,0)", "rgba(160,255,0)", "rgba(144,255,0)", "rgba(128,255,0)", "rgba(112,255,0)",
+"rgba(96,255,0)", "rgba(80,255,0)", "rgba(64,255,0)", "rgba(48,255,0)", "rgba(32,255,0)", "rgba(16,255,0)"];
 
 if (typeof MozWebSocket != "undefined") {
     socket = new MozWebSocket(get_appropriate_ws_url(), "trace-protocol");
@@ -208,6 +214,7 @@ $(function() {
     ctx = canvas.getContext("2d");
     ctx2 = canvas2.getContext("2d");
     ctx3 = canvas3.getContext("2d");
+    waterfall_ctx = waterfall_canvas.getContext("2d");
     draw_grid();
     $.getJSON("/config", {}, function(data) {
         console.log(data);
@@ -315,6 +322,7 @@ function draw_extremes(trace_data, dist, hdist) {
     ctx2.closePath();
     ctx2.stroke();
 }
+
 function draw_trace(trace_data, dist, hdist)
 {
     ctx.strokeStyle = 'red';
@@ -327,6 +335,25 @@ function draw_trace(trace_data, dist, hdist)
     }
     ctx.stroke();
 }
+//-40 - -100
+function draw_waterfall(trace_list,dist,hdist, upper_bound, lower_bound, color_list)
+{
+    for (var t=0; t < trace_list.length;t++)
+    {
+        var trace_data = trace_list[t];
+        for (var idx=1;idx < trace_data.length; idx++)
+        {
+            var range = upper_bound - lower_bound;
+            var color_idx = (trace_data[idx] - lower_bound) * 30 / range;
+            waterfall_ctx.strokeStyle = color_list[color_idx];
+            waterfall_ctx.beginPath();
+            waterfall_ctx.moveTo( (idx-1) * dist,t);
+            waterfall_ctx.lineTo( idx * dist,t);
+            waterfall_ctx.stroke();
+        }
+    }
+}
+
 function draw_markers(trace_data, dist, hdist)
 {
     var colors = ['blue', 'green'];
@@ -362,6 +389,9 @@ socket.onmessage = function(data_json) {
     draw_extremes(data_obj.trace, dist, hdist);
     draw_trace(data_obj.trace, dist, hdist);
     draw_markers(data_obj.trace, dist, hdist);
+    traces.unshift(data_obj.trace);
+    if (traces > 50) {traces.pop();}
+    draw_waterfall(traces, dist, hdist, upper_bound, lower_bound, cold_hot_table);
 
 
 }
