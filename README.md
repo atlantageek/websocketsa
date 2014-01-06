@@ -9,11 +9,9 @@ It requires libwebsockets: http://libwebsockets.org/trac/libwebsockets
 
 To build do the 
 
-./configure
-
-make
-
-make install
+* ./configure
+* make
+* make install
 
 
 Contact me at atlantageek@gmail.com if you use this.
