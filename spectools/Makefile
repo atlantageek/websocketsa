@@ -11,7 +11,7 @@ INCLUDE = ${DESTDIR}${prefix}/include
 
 CC = gcc
 LDFLAGS = 
-LIBS = -lwebsockets  -lpthread -lm -lusb 
+LIBS = -lwebsockets -lefence -lpthread -lm -lusb 
 CURSLIBS = 
 GTKLIBS = 
 HILDLIBS = 
@@ -22,8 +22,13 @@ GTK_CONFIG=@GTK_CONFIG@
 
 DRIVERS = wispy_hw_gen1.o wispy_hw_24x.o wispy_hw_dbx.o ubertooth_hw_u1.o
 
+RAWOBJS = spectool_container.o ${DRIVERS} \
+	spectool_net_client.o spectool_raw.o
+
 WEBOBJS = spectool_container.o ${DRIVERS} \
 	spectool_net_client.o spectool_web.o
+
+RAWBIN = spectool_raw
 
 WEBBIN = spectool_web
 
@@ -40,6 +45,9 @@ HILDUSBBIN = usbcontrol
 DEPEND	= .depend
 
 all:	$(DEPEND) spectool_web
+
+$(RAWBIN):	$(RAWOBJS)
+	$(CC) $^ -o $(RAWBIN) $(LDFLAGS) $(LIBS)
 
 $(WEBBIN):	$(WEBOBJS)
 	$(CC) $^ -o $(WEBBIN) $(LDFLAGS) $(LIBS)

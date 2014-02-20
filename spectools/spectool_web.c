@@ -76,7 +76,7 @@ static int callback_http(struct libwebsocket_context *context,
                          enum libwebsocket_callback_reasons reason, void *user,
                          void *in, size_t len)
 {
-	char buf[256];
+	char buf[2560];
 	char leaf_path[1024];
 	char resource_path[1024]="./webui";
 	int n, m,result;
@@ -95,13 +95,16 @@ static int callback_http(struct libwebsocket_context *context,
 	switch (reason) {
 	case LWS_CALLBACK_HTTP:
 
+                printf("Callback for http\n");
 		if (strlen((char *)in) < 2)
 		{
+                        printf("Getting index file\n");
 			in="/index.html";
 		}
 		result = strncmp((char *)(in + 1), "config",6);
 		if (result == 0)
 		{
+                        printf("Getting Json\n");
 		 	sprintf(json, "{\"start\": %d, \"stop\":%d, \"num_samples\":%d, \"rssi_max\":%d}", ran->start_khz, ran->end_khz, ran->num_samples, ran->rssi_max );
 			printf("%s\n",json);
 			sprintf(buf, 
@@ -113,7 +116,9 @@ static int callback_http(struct libwebsocket_context *context,
 		}
 		else
 		{
+                        printf("Getting other files\n");
 			ext = strrchr(in, '.');
+                        printf("Getting other files with ext %s\n",ext);
 			if (strcmp(ext,".css") == 0) {
 				strcpy(mimetype, "text/css");
 			}
@@ -123,7 +128,7 @@ static int callback_http(struct libwebsocket_context *context,
 			else {
 				strcpy(mimetype, "text/html");
 			}
-			printf("%s %s %s\n", buf, ext, mimetype);
+			printf("%s %s %s %d\n", buf, ext, mimetype, strlen(buf));
 
 			sprintf(buf, "%s%s", resource_path, (char *)in);
 			if (libwebsockets_serve_http_file(context, wsi, buf, mimetype,NULL))
@@ -216,8 +221,9 @@ callback_trace(struct libwebsocket_context *context,
                                                void *user, void *in, size_t len)
 {
         struct per_session_data__protocol *pss = (struct per_session_data__protocol *)user;
-	char json_data[10000];
+	char json_data[100000];
         //ran->sample_data
+        printf("Callback Trace\n");
 	switch (reason) {
        		case LWS_CALLBACK_ESTABLISHED:
 			lwsl_info("callback_dumb_increment: "
@@ -227,7 +233,7 @@ callback_trace(struct libwebsocket_context *context,
 			break;
         	case LWS_CALLBACK_SERVER_WRITEABLE:
 			curr_trace(0,NULL,json_data + LWS_SEND_BUFFER_PRE_PADDING );
-			/*printf("Callback Writable:%d %s|\n",strlen(&json_data[LWS_SEND_BUFFER_PRE_PADDING]),&json_data[LWS_SEND_BUFFER_PRE_PADDING]);*/
+			printf("Callback Writable:%d %s|\n",strlen(&json_data[LWS_SEND_BUFFER_PRE_PADDING]),&json_data[LWS_SEND_BUFFER_PRE_PADDING]);
 			libwebsocket_write(wsi, (char*)&json_data[LWS_SEND_BUFFER_PRE_PADDING], strlen(&json_data[LWS_SEND_BUFFER_PRE_PADDING]) , LWS_WRITE_TEXT);
 			libwebsocket_callback_on_writable(context, wsi);
 			break;
@@ -367,7 +373,7 @@ int main(int argc, char *argv[]) {
 	time_t snapshot_start;
 
 	/* snapshot */
-	DatalogSnapshot snapshot;
+	/*DatalogSnapshot snapshot;*/
 
 	/* Init webserver data */
 	memset(&lws_info, 0, sizeof lws_info);
@@ -426,7 +432,7 @@ int main(int argc, char *argv[]) {
 	}
 
 
-	reset_snapshot(&snapshot);
+	//reset_snapshot(&snapshot);
 	while (1) {
 		int o = getopt_long(argc, argv, "n:bhr:l",
 		                    long_options, &option_index);
@@ -733,13 +739,13 @@ int main(int argc, char *argv[]) {
 						continue;
 					/*printf("%s: ", spectool_phy_getname(di));*/
 
-					if ((time(NULL) - snapshot_start) > SNAPSHOT_LEN)
-					{
-						store_snapshot(snapshot_start, &snapshot);
-						reset_snapshot(&snapshot);
-						snapshot_start = time(NULL);
-						snapshot.trace_count = 0;
-					}
+					//if ((time(NULL) - snapshot_start) > SNAPSHOT_LEN)
+					//{
+						//store_snapshot(snapshot_start, &snapshot);
+						//reset_snapshot(&snapshot);
+						//snapshot_start = time(NULL);
+						//snapshot.trace_count = 0;
+					//}
 
 					for (r = 0; r < sb->num_samples; r++) {
 						sprintf(strnbr, ",%d ",
@@ -747,21 +753,21 @@ int main(int argc, char *argv[]) {
 						strcat(captured_trace,strnbr);
 						curr_trace(r,SPECTOOL_RSSI_CONVERT(sb->amp_offset_mdbm, sb->amp_res_mdbm, sb->sample_data[r]),(char *)NULL);
 
-						if ( snapshot.trace_count == 0 )
-						{
-							snapshot.max_trace[r] = sb->sample_data[r];
-							snapshot.min_trace[r] = sb->sample_data[r];
-							snapshot.total_trace[r] = sb->sample_data[r];
-						}
-						else
-						{
-							if ( snapshot.max_trace[r] < sb->sample_data[r] )
-								snapshot.max_trace[r] = sb->sample_data[r];
-							if ( snapshot.min_trace[r] > sb->sample_data[r] )
-								snapshot.min_trace[r] = sb->sample_data[r];
-							snapshot.total_trace[r] = snapshot.total_trace[r] + sb->sample_data[r];
-						}
-						snapshot.trace_count = snapshot.trace_count + 1;
+						//if ( snapshot.trace_count == 0 )
+						//{
+							//snapshot.max_trace[r] = sb->sample_data[r];
+							//snapshot.min_trace[r] = sb->sample_data[r];
+							//snapshot.total_trace[r] = sb->sample_data[r];
+						//}
+						//else
+						//{
+							//if ( snapshot.max_trace[r] < sb->sample_data[r] )
+								//snapshot.max_trace[r] = sb->sample_data[r];
+							//if ( snapshot.min_trace[r] > sb->sample_data[r] )
+								//snapshot.min_trace[r] = sb->sample_data[r];
+							//snapshot.total_trace[r] = snapshot.total_trace[r] + sb->sample_data[r];
+						//}
+						//snapshot.trace_count = snapshot.trace_count + 1;
 
 					}
 
